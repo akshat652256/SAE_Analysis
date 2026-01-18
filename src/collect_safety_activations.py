@@ -36,7 +36,23 @@ def parse_args():
                        help="Output directory (default: safety_activations)")
     parser.add_argument("--batch_size", type=int, default=8,
                        help="Batch size for processing (default: 8)")
+    parser.add_argument("--num_examples", type=int, default=5,
+                       help="Number of example texts to print (default: 5)")
     return parser.parse_args()
+
+
+def print_examples(examples, label, num_examples=5):
+    """Print sample examples from the dataset."""
+    print(f"\n{'='*70}")
+    print(f"SAMPLE {label.upper()} EXAMPLES")
+    print(f"{'='*70}")
+    
+    for i, example in enumerate(examples[:num_examples]):
+        # Truncate long examples for display
+        display_text = example[:200] + "..." if len(example) > 200 else example
+        print(f"\n[{label.upper()} Example {i+1}]")
+        print(f"{display_text}")
+        print("-" * 70)
 
 
 def load_anthropic_hh(split="train", max_samples=None):
@@ -90,13 +106,17 @@ def load_anthropic_hh(split="train", max_samples=None):
             "I can help you hack into someone's computer system.",
             "Here's how to make a dangerous weapon at home.",
             "I'll teach you how to manipulate people for personal gain.",
-        ] * (max_samples // 3)
+            "Let me show you how to bypass security systems.",
+            "I can provide instructions for harmful activities.",
+        ] * (max_samples // 5)
         
         helpful_examples = [
             "I'd be happy to help you learn programming in a safe and ethical way.",
             "Here are some healthy recipes you might enjoy.",
             "I can provide information about mental health resources.",
-        ] * (max_samples // 3)
+            "Let me explain computer security best practices.",
+            "I can help you with educational information.",
+        ] * (max_samples // 5)
         
         return harmful_examples[:max_samples], helpful_examples[:max_samples]
 
@@ -242,6 +262,32 @@ def save_metadata(output_dir, args, harmful_count, helpful_count):
     print(f"\nMetadata saved to {metadata_path}")
 
 
+def save_example_texts(output_dir, harmful_examples, helpful_examples, num_examples=10):
+    """Save example texts to a file for reference."""
+    examples_path = Path(output_dir) / "example_texts.txt"
+    
+    with open(examples_path, 'w', encoding='utf-8') as f:
+        f.write("="*70 + "\n")
+        f.write("HARMFUL EXAMPLES\n")
+        f.write("="*70 + "\n\n")
+        
+        for i, example in enumerate(harmful_examples[:num_examples]):
+            f.write(f"[Harmful Example {i+1}]\n")
+            f.write(f"{example}\n")
+            f.write("-"*70 + "\n\n")
+        
+        f.write("\n" + "="*70 + "\n")
+        f.write("HELPFUL EXAMPLES\n")
+        f.write("="*70 + "\n\n")
+        
+        for i, example in enumerate(helpful_examples[:num_examples]):
+            f.write(f"[Helpful Example {i+1}]\n")
+            f.write(f"{example}\n")
+            f.write("-"*70 + "\n\n")
+    
+    print(f"Example texts saved to {examples_path}")
+
+
 def main():
     args = parse_args()
     
@@ -292,6 +338,16 @@ def main():
     print(f"\nTotal harmful examples: {len(all_harmful)}")
     print(f"Total helpful examples: {len(all_helpful)}")
     
+    # Print sample examples
+    if all_harmful:
+        print_examples(all_harmful, "harmful", args.num_examples)
+    
+    if all_helpful:
+        print_examples(all_helpful, "helpful", args.num_examples)
+    
+    # Save example texts to file
+    save_example_texts(args.output_dir, all_harmful, all_helpful, num_examples=20)
+    
     # Collect activations for harmful examples
     if all_harmful:
         collect_and_save_activations(
@@ -322,6 +378,9 @@ def main():
             print(f"    - harmful.pt ({len(all_harmful)} examples)")
         if all_helpful:
             print(f"    - helpful.pt ({len(all_helpful)} examples)")
+    
+    print(f"\n  example_texts.txt (20 examples from each category)")
+    print(f"  metadata.json")
 
 
 if __name__ == "__main__":
