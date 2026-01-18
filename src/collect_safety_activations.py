@@ -346,7 +346,7 @@ def main():
         print_examples(all_helpful, "helpful", args.num_examples)
     
     # Save example texts to file
-    save_example_texts(args.output_dir, all_harmful, all_helpful, num_examples=20)
+    # save_example_texts(args.output_dir, all_harmful, all_helpful, num_examples=20)
     
     # Collect activations for harmful examples
     if all_harmful:
